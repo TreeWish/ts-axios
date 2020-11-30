@@ -1,9 +1,10 @@
+import { createError } from './helpers/error'
 import { parseHeaders } from './helpers/headers'
 import { AxiosPromise, AxiosRequestConfig, AxiosResponse } from './types'
 
 export default function xhr(config: AxiosRequestConfig): AxiosPromise {
   return new Promise((resolve, reject) => {
-    const { data = null, url, method = 'get', headers, responseType } = config
+    const { data = null, url, method = 'get', headers, responseType, timeout } = config
     const request = new XMLHttpRequest()
     if (responseType) {
       request.responseType = responseType
@@ -13,6 +14,10 @@ export default function xhr(config: AxiosRequestConfig): AxiosPromise {
 
     request.onreadystatechange = function handleLoad() {
       if (request.readyState !== 4) {
+        return
+      }
+      // 网络或者超时情况，status都为0
+      if (request.status === 0) {
         return
       }
       const responseHeaders = parseHeaders(request.getAllResponseHeaders())
@@ -26,9 +31,40 @@ export default function xhr(config: AxiosRequestConfig): AxiosPromise {
         config,
         request
       }
-      resolve(response)
+      handleResponse(response)
     }
 
+    // 网络异常处理
+    request.onerror = function() {
+      reject(createError('Network Error', config, null, request))
+    }
+
+    // 超时处理
+    if (timeout) {
+      request.timeout = timeout
+    }
+    request.ontimeout = function() {
+      reject(createError(`Timeout of ${timeout} ms exceeded`, config, 'ECONNABORTED', request))
+    }
+
+    // 响应状态码处理
+    function handleResponse(response: AxiosResponse) {
+      if (response.status >= 200 && response.status < 300) {
+        resolve(response)
+      } else {
+        reject(
+          createError(
+            `Request failed with status code ${response.status}`,
+            config,
+            null,
+            request,
+            response
+          )
+        )
+      }
+    }
+
+    // 添加Headers
     Object.keys(headers).forEach(name => {
       if (data === null && name.toLowerCase() === 'content-type') {
         delete headers[name]
@@ -36,6 +72,7 @@ export default function xhr(config: AxiosRequestConfig): AxiosPromise {
         request.setRequestHeader(name, headers[name])
       }
     })
+    // 发送请求数据
     request.send(data)
   })
 }
