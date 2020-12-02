@@ -64,7 +64,22 @@ export interface Axios {
  */
 // 通过函数重载，让接口支持 axios(url, {}) 和 axios({config})
 export interface AxiosInstance extends Axios {
+  interceptors: any;
+
   <T = any>(config: AxiosRequestConfig): AxiosPromise<T>
 
   <T = any>(url: string, config?: AxiosRequestConfig): AxiosPromise<T>
+}
+
+export interface AxiosInterceptorManager {
+  use(resolved: ResolveFn, rejected?: RejectFn): number
+
+  eject(id: number): void
+}
+
+export interface ResolveFn<T=any> {
+  (val: T): T | Promise<T>
+}
+export interface RejectFn {
+  (error: any): any
 }
