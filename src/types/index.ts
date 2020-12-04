@@ -22,7 +22,14 @@ export interface AxiosRequestConfig {
   headers?: any
   responseType?: XMLHttpRequestResponseType
   timeout?: number
+  transformRequest?: AxiosTransformer | AxiosTransformer[]
+  transformResponse?: AxiosTransformer | AxiosTransformer[]
 }
+
+export interface AxiosTransformer {
+  (data: any, headers?: any): any
+}
+
 export interface AxiosResponse<T = any> {
   data: T
   status: number
@@ -64,11 +71,17 @@ export interface Axios {
  */
 // 通过函数重载，让接口支持 axios(url, {}) 和 axios({config})
 export interface AxiosInstance extends Axios {
+  defaults: any;
+
+
   interceptors: any;
 
   <T = any>(config: AxiosRequestConfig): AxiosPromise<T>
 
   <T = any>(url: string, config?: AxiosRequestConfig): AxiosPromise<T>
+}
+export interface AxiosStatic extends AxiosInstance {
+  create(config?: AxiosRequestConfig): AxiosInstance
 }
 
 export interface AxiosInterceptorManager {
@@ -83,3 +96,4 @@ export interface ResolveFn<T=any> {
 export interface RejectFn {
   (error: any): any
 }
+
