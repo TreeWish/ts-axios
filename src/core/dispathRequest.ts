@@ -6,6 +6,7 @@ import { AxiosRequestConfig, AxiosPromise, AxiosResponse } from '../types'
 import xhr from '../xhr'
 import transform from './transform'
 export default function dispathRequest(config: AxiosRequestConfig): AxiosPromise {
+  throwIfCancellationRequested(config)
   processConfig(config)
   return xhr(config).then(res => {
     return transformResponsetData(res)
@@ -38,3 +39,8 @@ function transformResponsetData(res: AxiosResponse): AxiosResponse {
   return res
 }
 
+function throwIfCancellationRequested(config: AxiosRequestConfig): void {
+  if (config.cancelToken) {
+    config.cancelToken.throwIfRequested()
+  }
+}
